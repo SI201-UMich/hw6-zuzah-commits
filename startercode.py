@@ -147,6 +147,9 @@ def get_longest_lifespan_breed(cache_file):
             name = cache[url]["data"]["attributes"]["name"]
             max_life = cache[url]["data"]["attributes"]["life"]["max"]
 
+            if not isinstance(max_life, (int, float)):
+                continue
+
             if best_lifespan is None:
                 best_name = name
                 best_lifespan = max_life
@@ -229,7 +232,53 @@ def recommend_breeds_in_same_group(breed_name, cache_file):
             "No group information available for '{breed_name}'."  (no group id)
             "No recommendations found based on '{breed_name}'."  (no other breeds in that group)
     """
-
+    cache = load_json(cache_file)
+    
+    if len(cache) == 0:
+        return "No breed data found in cache."
+    
+    breed_found = False
+    target_group_id = None
+    
+    for url in cache:
+        try:
+            name = cache[url]["data"]["attributes"]["name"]
+            if name.lower() == breed_name.lower():
+                breed_found = True
+                try:
+                    target_group_id = cache[url]["data"]["relationships"]["group"]["data"]["id"]
+                except:
+                    target_group_id = None
+                break
+        except:
+            continue
+    
+    if breed_found == False:
+        return "'" + breed_name + "' is not in the cache."
+    
+    if target_group_id is None:
+        return "No group information available for '" + breed_name + "'."
+    
+    recommendations = []
+    
+    for url in cache:
+        try:
+            name = cache[url]["data"]["attributes"]["name"]
+            group_id = cache[url]["data"]["relationships"]["group"]["data"]["id"]
+            
+            if name.lower() == breed_name.lower():
+                continue
+            
+            if group_id == target_group_id:
+                recommendations.append(name)
+        except:
+            continue
+    
+    if len(recommendations) == 0:
+        return "No recommendations found based on '" + breed_name + "'."
+    
+    recommendations.sort()
+    return recommendations
 
 class TestHomeworkDogAPI(unittest.TestCase):
     def setUp(self):
@@ -453,7 +502,7 @@ class TestHomeworkDogAPI(unittest.TestCase):
     # -------------------------
     # extra credit - uncomment tests below to evaluate extra credit function
     # -------------------------
-    """
+    
     def test_recommend_breeds_in_same_group_empty_cache(self):
         create_cache({}, self.test_cache_file)
         self.assertEqual(
@@ -558,7 +607,7 @@ class TestHomeworkDogAPI(unittest.TestCase):
             recommend_breeds_in_same_group("breed a", self.test_cache_file),
             ["Breed B", "Breed Z"],
         )
-    """
+    
 
 
 if __name__ == "__main__":
