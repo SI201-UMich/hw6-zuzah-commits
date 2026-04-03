@@ -181,8 +181,32 @@ def get_groups_above_cutoff(cutoff, cache_file):
     RETURNS:
         A dictionary {group_uuid: count} for groups with count >= cutoff only.
     """
-    pass
+    cache = load_json(cache_file)
+    
+    group_counts = {}
+    
+    for url in cache:
+        try:
+            group_id = cache[url]["data"]["relationships"]["group"]["data"]["id"]
+            
+            if group_id is None:
+                continue
+            
+            if group_id in group_counts:
+                group_counts[group_id] = group_counts[group_id] + 1
+            else:
+                group_counts[group_id] = 1
+                
+        except:
+            continue
 
+    result = {}
+
+    for group_id in group_counts:
+        if group_counts[group_id] >= cutoff:
+            result[group_id] = group_counts[group_id]
+
+    return result
 
 # Extra Credit
 def recommend_breeds_in_same_group(breed_name, cache_file):
